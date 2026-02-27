@@ -218,21 +218,24 @@ export class GameScene extends Phaser.Scene {
     // ─── HUD & UI ──────────────────────────────────────────────────────
 
     createHUD() {
-        const style = { fontFamily: '"Georgia", serif', fontSize: '13px', color: '#ffddaa', fontStyle: 'bold' }
+        const boldStyle = { fontFamily: '"Georgia", serif', fontSize: '16px', color: '#ffddaa', fontStyle: 'bold' }
 
-        // HUD Background boards (offset down to avoid Play.fun widget overlay)
-        const topBg = this.add.rectangle(5, 65, 140, 75, 0x3a2010).setOrigin(0).setDepth(99)
-        topBg.setStrokeStyle(2, 0x1f0900)
+        // WAVE label — top-left, below the first road (~160px from top)
+        const waveBg = this.add.rectangle(5, 155, 100, 28, 0x3a2010, 0.85).setOrigin(0).setDepth(99)
+        waveBg.setStrokeStyle(2, 0x1f0900)
+        this.hudWave = this.add.text(12, 160, '', boldStyle).setDepth(100)
 
-        const baseBg = this.add.rectangle(this.cameras.main.width - 120, 65, 115, 30, 0x3a2010).setOrigin(0).setDepth(99)
-        baseBg.setStrokeStyle(2, 0x1f0900)
+        // HP label — top-right, same height as wave
+        const hpBg = this.add.rectangle(this.cameras.main.width - 85, 155, 80, 28, 0x3a2010, 0.85).setOrigin(0).setDepth(99)
+        hpBg.setStrokeStyle(2, 0x1f0900)
+        this.hudBaseHP = this.add.text(this.cameras.main.width - 78, 160, '', { ...boldStyle, color: '#ff4444' }).setDepth(100)
 
-        this.hudWave = this.add.text(12, 72, '', style).setDepth(100)
-        this.hudScore = this.add.text(12, 88, '', style).setDepth(100)
-        this.hudHigh = this.add.text(12, 104, '', style).setDepth(100)
-        this.hudSol = this.add.text(12, 120, '', { ...style, color: '#ffff00', fontSize: '15px' }).setDepth(100)
+        // Score/High — hidden labels (still tracked for game over screen)
+        this.hudScore = this.add.text(-999, -999, '', boldStyle).setDepth(100)
+        this.hudHigh = this.add.text(-999, -999, '', boldStyle).setDepth(100)
 
-        this.hudBaseHP = this.add.text(this.cameras.main.width - 110, 72, '', { ...style, color: '#ff4444', fontSize: '14px' }).setDepth(100)
+        // $SOL is created inside createShopUI, just store a ref placeholder
+        this.hudSol = null
 
         this.updateHUD()
 
@@ -253,8 +256,8 @@ export class GameScene extends Phaser.Scene {
         this.hudWave.setText(`WAVE: ${this.waveManager.currentWave}`)
         this.hudScore.setText(`SCORE: ${this.scoreManager.getScore()}`)
         this.hudHigh.setText(`HIGH: ${this.scoreManager.highScore}`)
-        this.hudSol.setText(`$SOL: ${this.sol}`)
-        this.hudBaseHP.setText(`BASE HP: ${this.baseHP}`)
+        if (this.hudSol) this.hudSol.setText(`$SOL: ${this.sol}`)
+        this.hudBaseHP.setText(`HP: ${this.baseHP}`)
     }
 
     createRangePreview() {
@@ -277,26 +280,32 @@ export class GameScene extends Phaser.Scene {
         this.ttDesc = this.add.text(-195, -2, '', { fontFamily: '"Georgia", serif', fontSize: '13px', color: '#dddddd', wordWrap: { width: 400 } })
         this.tooltipPanel.add([ttBg, this.ttTitle, this.ttDesc])
 
-        // Render tower buttons - Centered dynamically
+        // $SOL label on the right side of the shop bar
+        const solStyle = { fontFamily: '"Georgia", serif', fontSize: '16px', color: '#ffff00', fontStyle: 'bold' }
+        this.hudSol = this.add.text(shopWidth - 12, shopY + 5, '', solStyle).setOrigin(1, 0.5).setDepth(152)
+
+        // Render tower buttons — centered with room for SOL label on the right
         this.shopButtons = []
         const towerDefs = Object.values(TOWERS)
-        const spacing = 72
+        const spacing = 68
         const totalWidth = (towerDefs.length - 1) * spacing
-        let startX = (shopWidth - totalWidth) / 2
+        const solReserve = 80 // space reserved for $SOL on the right
+        const availableWidth = shopWidth - solReserve
+        let startX = (availableWidth - totalWidth) / 2
 
         towerDefs.forEach((towerDef, i) => {
             const x = startX + (i * spacing)
 
-            // button bg - centered and thinned
-            const btnBg = this.add.rectangle(x, shopY + 5, 58, 58, 0x5a3018).setDepth(151).setInteractive({ useHandCursor: true })
+            // button bg
+            const btnBg = this.add.rectangle(x, shopY + 5, 56, 56, 0x5a3018).setDepth(151).setInteractive({ useHandCursor: true })
             btnBg.setStrokeStyle(2, 0x1f0900)
             btnBg.towerKey = towerDef.key
 
             // icon
-            const icon = this.add.sprite(x, shopY - 5, towerDef.key).setDepth(152).setDisplaySize(48, 48)
+            const icon = this.add.sprite(x, shopY - 5, towerDef.key).setDepth(152).setDisplaySize(44, 44)
 
             // cost text
-            const costText = this.add.text(x, shopY + 28, `${towerDef.cost} SOL`, { fontFamily: '"Georgia", serif', fontSize: '12px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5).setDepth(152)
+            const costText = this.add.text(x, shopY + 28, `${towerDef.cost} SOL`, { fontFamily: '"Georgia", serif', fontSize: '11px', color: '#ffff00', fontStyle: 'bold' }).setOrigin(0.5).setDepth(152)
 
             btnBg.on('pointerdown', () => {
                 if (this.sol >= towerDef.cost) {
@@ -325,6 +334,9 @@ export class GameScene extends Phaser.Scene {
 
             this.shopButtons.push({ bg: btnBg, key: towerDef.key })
         })
+
+        // Update SOL text now that hudSol exists
+        if (this.hudSol) this.hudSol.setText(`$SOL: ${this.sol}`)
     }
 
     updateShopHighlight() {
