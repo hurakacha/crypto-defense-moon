@@ -7,19 +7,21 @@ import { SCORE, GAME } from '../config/constants.js'
  * Score formula: kills * 10 + wave * 100
  */
 export class ScoreManager {
-    constructor(sdk = null) {
+    constructor(scene = null) {
         this.kills = 0
         this.currentWave = 0
         this.highScore = this.loadHighScore()
-        this.sdk = sdk
+        this.scene = scene
     }
 
     /** Register a kill and return updated score */
     addKill() {
         this.kills++
         this.checkHighScore()
-        if (this.sdk) {
-            this.sdk.addPoints(SCORE.PER_KILL)
+        if (this.scene && this.scene.sdkReady && this.scene.sdk && this.scene.sdk.playcoin) {
+            try {
+                this.scene.sdk.playcoin.addPoints(SCORE.PER_KILL)
+            } catch (e) { }
         }
         return this.getScore()
     }
@@ -28,8 +30,10 @@ export class ScoreManager {
     setWave(wave) {
         this.currentWave = wave
         this.checkHighScore()
-        if (this.sdk) {
-            this.sdk.addPoints(SCORE.PER_WAVE)
+        if (this.scene && this.scene.sdkReady && this.scene.sdk && this.scene.sdk.playcoin) {
+            try {
+                this.scene.sdk.playcoin.addPoints(SCORE.PER_WAVE)
+            } catch (e) { }
         }
     }
 
