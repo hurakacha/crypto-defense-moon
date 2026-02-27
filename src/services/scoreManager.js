@@ -18,10 +18,8 @@ export class ScoreManager {
     addKill() {
         this.kills++
         this.checkHighScore()
-        if (this.scene && this.scene.sdkReady && this.scene.sdk && this.scene.sdk.playcoin) {
-            try {
-                this.scene.sdk.playcoin.addPoints(SCORE.PER_KILL)
-            } catch (e) { }
+        if (this.scene && this.scene.sdkReady && this.scene.sdk) {
+            try { this.scene.sdk.addPoints(SCORE.PER_KILL) } catch (e) { }
         }
         return this.getScore()
     }
@@ -30,10 +28,8 @@ export class ScoreManager {
     setWave(wave) {
         this.currentWave = wave
         this.checkHighScore()
-        if (this.scene && this.scene.sdkReady && this.scene.sdk && this.scene.sdk.playcoin) {
-            try {
-                this.scene.sdk.playcoin.addPoints(SCORE.PER_WAVE)
-            } catch (e) { }
+        if (this.scene && this.scene.sdkReady && this.scene.sdk) {
+            try { this.scene.sdk.addPoints(SCORE.PER_WAVE) } catch (e) { }
         }
     }
 

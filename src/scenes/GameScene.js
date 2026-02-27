@@ -17,7 +17,7 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.setBackgroundColor(GAME.BG_COLOR)
 
         // Initialize Play.fun SDK
-        this.sdkReady = false;
+        this.sdkReady = false
         try {
             this.sdk = new OpenGameSDK({
                 gameId: 'f4711bc3-80a6-43b8-b660-8ceecd53b2ab',
@@ -25,11 +25,16 @@ export class GameScene extends Phaser.Scene {
                 ui: { usePointsWidget: true }
             })
 
+            this.sdk.on('OnReady', () => {
+                console.log('Play.fun SDK ready via OnReady event!')
+                this.sdkReady = true
+            })
+
             this.sdk.init().then(() => {
-                console.log('Play.fun SDK ready!')
-                this.sdkReady = true;
+                console.log('Play.fun SDK init resolved')
+                this.sdkReady = true
             }).catch(err => {
-                console.error('Play.fun SDK init failed:', err)
+                console.warn('Play.fun SDK init warning:', err)
             })
         } catch (e) {
             console.error('Play.fun SDK creation error:', e)
@@ -168,10 +173,8 @@ export class GameScene extends Phaser.Scene {
         this.time.addEvent({
             delay: 30000,
             callback: () => {
-                if (this.sdkReady && this.sdk && this.sdk.playcoin) {
-                    try {
-                        this.sdk.playcoin.savePoints()
-                    } catch (e) { }
+                if (this.sdkReady && this.sdk) {
+                    try { this.sdk.savePoints() } catch (e) { }
                 }
             },
             loop: true
@@ -217,19 +220,19 @@ export class GameScene extends Phaser.Scene {
     createHUD() {
         const style = { fontFamily: '"Georgia", serif', fontSize: '13px', color: '#ffddaa', fontStyle: 'bold' }
 
-        // HUD Background boards (smaller, tighter)
-        const topBg = this.add.rectangle(5, 5, 140, 75, 0x3a2010).setOrigin(0).setDepth(99)
+        // HUD Background boards (offset down to avoid Play.fun widget overlay)
+        const topBg = this.add.rectangle(5, 65, 140, 75, 0x3a2010).setOrigin(0).setDepth(99)
         topBg.setStrokeStyle(2, 0x1f0900)
 
-        const baseBg = this.add.rectangle(this.cameras.main.width - 120, 5, 115, 30, 0x3a2010).setOrigin(0).setDepth(99)
+        const baseBg = this.add.rectangle(this.cameras.main.width - 120, 65, 115, 30, 0x3a2010).setOrigin(0).setDepth(99)
         baseBg.setStrokeStyle(2, 0x1f0900)
 
-        this.hudWave = this.add.text(12, 12, '', style).setDepth(100)
-        this.hudScore = this.add.text(12, 28, '', style).setDepth(100)
-        this.hudHigh = this.add.text(12, 44, '', style).setDepth(100)
-        this.hudSol = this.add.text(12, 60, '', { ...style, color: '#ffff00', fontSize: '15px' }).setDepth(100)
+        this.hudWave = this.add.text(12, 72, '', style).setDepth(100)
+        this.hudScore = this.add.text(12, 88, '', style).setDepth(100)
+        this.hudHigh = this.add.text(12, 104, '', style).setDepth(100)
+        this.hudSol = this.add.text(12, 120, '', { ...style, color: '#ffff00', fontSize: '15px' }).setDepth(100)
 
-        this.hudBaseHP = this.add.text(this.cameras.main.width - 110, 12, '', { ...style, color: '#ff4444', fontSize: '14px' }).setDepth(100)
+        this.hudBaseHP = this.add.text(this.cameras.main.width - 110, 72, '', { ...style, color: '#ff4444', fontSize: '14px' }).setDepth(100)
 
         this.updateHUD()
 
@@ -605,9 +608,9 @@ export class GameScene extends Phaser.Scene {
         this.isGameOver = true
         this.scoreManager.checkHighScore()
 
-        if (this.sdkReady && this.sdk && this.sdk.playcoin) {
+        if (this.sdkReady && this.sdk) {
             try {
-                this.sdk.playcoin.savePoints()
+                this.sdk.savePoints()
             } catch (e) { }
         }
 

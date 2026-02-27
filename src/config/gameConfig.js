@@ -13,7 +13,7 @@ export const gameConfig = {
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: GAME.WIDTH,
         height: GAME.HEIGHT,
-        expandParent: false
+        expandParent: true
     },
     pixelArt: false,
     roundPixels: true,
