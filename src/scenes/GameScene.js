@@ -168,9 +168,9 @@ export class GameScene extends Phaser.Scene {
         this.time.addEvent({
             delay: 30000,
             callback: () => {
-                if (this.sdkReady && this.sdk) {
+                if (this.sdkReady && this.sdk && this.sdk.playcoin) {
                     try {
-                        this.sdk.savePoints()
+                        this.sdk.playcoin.savePoints()
                     } catch (e) { }
                 }
             },
@@ -605,9 +605,9 @@ export class GameScene extends Phaser.Scene {
         this.isGameOver = true
         this.scoreManager.checkHighScore()
 
-        if (this.sdkReady && this.sdk) {
+        if (this.sdkReady && this.sdk && this.sdk.playcoin) {
             try {
-                this.sdk.savePoints()
+                this.sdk.playcoin.savePoints()
             } catch (e) { }
         }
 
