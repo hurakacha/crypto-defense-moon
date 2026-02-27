@@ -17,15 +17,17 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.setBackgroundColor(GAME.BG_COLOR)
 
         // Initialize Play.fun SDK
+        this.sdkReady = false;
         try {
             this.sdk = new OpenGameSDK({
-                gameId: 'crypto-defense-to-the-moon-uuid',
-                apiKey: 'crypto-defense-to-the-moon-api-key',
+                gameId: 'f4711bc3-80a6-43b8-b660-8ceecd53b2ab',
+                apiKey: 'f4711bc3-80a6-43b8-b660-8ceecd53b2ab',
                 ui: { usePointsWidget: true }
             })
 
             this.sdk.init().then(() => {
                 console.log('Play.fun SDK ready!')
+                this.sdkReady = true;
             }).catch(err => {
                 console.error('Play.fun SDK init failed:', err)
             })
@@ -35,7 +37,7 @@ export class GameScene extends Phaser.Scene {
 
         // Init Managers
         this.waveManager = new WaveManager(this)
-        this.scoreManager = new ScoreManager(this.sdk)
+        this.scoreManager = new ScoreManager(this)
         this.gridManager = new GridManager(this)
         this.towerManager = new TowerManager(this, this.gridManager)
 
@@ -118,6 +120,7 @@ export class GameScene extends Phaser.Scene {
             // If we have a tower selected to build and cell is free
             if (this.selectedTowerKey && this.gridManager.canBuild(cell.col, cell.row)) {
                 const def = Object.values(TOWERS).find(t => t.key === this.selectedTowerKey)
+                console.log(`Trying to build ${this.selectedTowerKey} at ${cell.col}, ${cell.row}. Cost: ${def.cost}, SOL: ${this.sol}`);
                 if (this.sol >= def.cost) {
                     const res = this.towerManager.placeTower(this.selectedTowerKey, cell.col, cell.row)
                     if (res.success) {
@@ -133,11 +136,21 @@ export class GameScene extends Phaser.Scene {
                                 this.sound.play('snd_build', { volume: 0.5 })
                             }
                         } catch (e) { }
+                    } else {
+                        console.log('TowerManager placeTower failed:', res);
                     }
                 } else {
+                    console.log('Not enough SOL to build');
                     // Visual feedback: not enough SOL
                     this.cameras.main.shake(100, 0.005)
                 }
+            } else if (this.selectedTowerKey) {
+                console.log(`Cannot build at ${cell.col}, ${cell.row}. canBuild returned false.`);
+                // Deselect current tower to build
+                this.selectedTowerKey = null
+                this.updateShopHighlight()
+                if (this.rangePreview) this.rangePreview.setVisible(false)
+                if (this.cellHighlight) this.cellHighlight.setVisible(false)
             } else {
                 // Deselect current tower to build
                 this.selectedTowerKey = null
@@ -154,7 +167,11 @@ export class GameScene extends Phaser.Scene {
         this.time.addEvent({
             delay: 30000,
             callback: () => {
-                if (this.sdk) this.sdk.savePoints()
+                if (this.sdkReady && this.sdk) {
+                    try {
+                        this.sdk.savePoints()
+                    } catch (e) { }
+                }
             },
             loop: true
         })
@@ -372,11 +389,15 @@ export class GameScene extends Phaser.Scene {
 
     hideUpgradeUI() {
         this.activeUpgradeTower = null
-        this.upgradeContainer.setVisible(false)
+        if (this.upgradeContainer) {
+            this.upgradeContainer.setVisible(false)
+        }
         // hide range circles handled by clicking empty grid
-        this.towerManager.towers.forEach(t => {
-            if (t.rangeCircle) t.rangeCircle.setVisible(false)
-        })
+        if (this.towerManager && this.towerManager.towers) {
+            this.towerManager.towers.forEach(t => {
+                if (t && t.rangeCircle) t.rangeCircle.setVisible(false)
+            })
+        }
     }
 
     // ─── Events ────────────────────────────────────────────────────────
@@ -583,8 +604,10 @@ export class GameScene extends Phaser.Scene {
         this.isGameOver = true
         this.scoreManager.checkHighScore()
 
-        if (this.sdk) {
-            this.sdk.savePoints()
+        if (this.sdkReady && this.sdk) {
+            try {
+                this.sdk.savePoints()
+            } catch (e) { }
         }
 
         this.enemies.getChildren().forEach((e) => this.destroyEnemy(e))
