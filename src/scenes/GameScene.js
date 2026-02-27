@@ -67,6 +67,7 @@ export class GameScene extends Phaser.Scene {
         this.createHUD()
         this.createRangePreview()
         this.createShopUI()
+        this.createUpgradeUI()
         this.bindEvents()
 
         // Handle pointer move for range preview
